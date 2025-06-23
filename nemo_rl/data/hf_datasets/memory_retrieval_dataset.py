@@ -23,5 +23,5 @@ class MemoryRetrievalDataset:
         self.formatted_ds = {"train": formatted, "validation": None}
         self.task_spec = TaskDataSpec(
             task_name="memory_retrieval",
-            system_prompt_file="obsidian-agent/agent/system_prompt.txt",
+            system_prompt_file="obsidian_agent/agent/system_prompt.txt",
         )
