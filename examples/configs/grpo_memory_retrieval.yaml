@@ -98,6 +98,7 @@ policy:
 
 data:
   dataset_path: "dataset.json"
+  val_split_ratio: 0.1
   max_input_seq_length: ${policy.max_total_sequence_length}
   prompt_file: null
   system_prompt_file: null
