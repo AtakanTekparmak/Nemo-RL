@@ -9,7 +9,7 @@ import torch
 from obsidian_agent.agent.engine import execute_sandboxed_code
 from obsidian_agent.agent.settings import MAX_TOOL_TURNS, SANDBOX_TIMEOUT
 from obsidian_agent.agent.utils import extract_python_code, extract_reply
-from obsidian_agent.data.schemas.kb import Fact
+from obsidian_agent.training.reward.schemas import Fact
 from obsidian_agent.training.reward import get_reward
 
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
