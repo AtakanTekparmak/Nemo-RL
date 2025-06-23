@@ -97,7 +97,7 @@ policy:
         num_nodes: null
 
 data:
-  dataset_path: "path/to/dataset.json"
+  dataset_path: "dataset.json"
   max_input_seq_length: ${policy.max_total_sequence_length}
   prompt_file: null
   system_prompt_file: null
