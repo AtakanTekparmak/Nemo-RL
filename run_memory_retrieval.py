@@ -110,7 +110,10 @@ def setup_data(
     dict[str, EnvironmentInterface],
 ]:
     print("\n▶ Setting up data...")
-    dataset_obj = MemoryRetrievalDataset(data_config["dataset_path"])
+    dataset_obj = MemoryRetrievalDataset(
+        data_config["dataset_path"],
+        data_config.get("val_split_ratio", 0.1),
+    )
     task_spec = dataset_obj.task_spec
 
     task_data_processors: dict[str, tuple[TaskDataSpec, TaskDataProcessFnCallable]] = {
@@ -135,6 +138,14 @@ def setup_data(
     )
 
     val_dataset = None
+    if dataset_obj.formatted_ds.get("validation") is not None:
+        val_dataset = AllTaskProcessedDataset(
+            dataset_obj.formatted_ds["validation"],
+            tokenizer,
+            task_spec,
+            task_data_processors,
+            max_seq_length=data_config["max_input_seq_length"],
+        )
 
     task_to_env: dict[str, EnvironmentInterface] = defaultdict(lambda: env)
     task_to_env["memory_retrieval"] = env
