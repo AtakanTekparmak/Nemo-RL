@@ -9,7 +9,7 @@ import pickle
 import subprocess
 import base64
 
-from agent.settings import SANDBOX_TIMEOUT
+from obsidian_agent.agent.settings import SANDBOX_TIMEOUT
 
 # Configure a logger for the sandbox (in real use, configure handlers/level as needed)
 logger = logging.getLogger(__name__)

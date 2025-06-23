@@ -1,8 +1,8 @@
 import asyncio
 from typing import Optional, Tuple, Dict
 
-from agent.engine import execute_sandboxed_code as sync_execute_sandboxed_code
-from agent.settings import SANDBOX_TIMEOUT
+from obsidian_agent.agent.engine import execute_sandboxed_code as sync_execute_sandboxed_code
+from obsidian_agent.agent.settings import SANDBOX_TIMEOUT
 
 async def execute_sandboxed_code(
         code: str,

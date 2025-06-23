@@ -1,8 +1,8 @@
-from agent.engine import execute_sandboxed_code
-from agent.model import get_model_response, create_openai_client, create_vllm_client
-from agent.utils import load_system_prompt, create_memory_if_not_exists, extract_python_code, format_results, extract_reply, extract_thoughts
-from agent.settings import MEMORY_PATH, SAVE_CONVERSATION_PATH, MAX_TOOL_TURNS, VLLM_HOST, VLLM_PORT, OPENROUTER_STRONG_MODEL
-from agent.schemas import ChatMessage, Role, AgentResponse
+from obsidian_agent.agent.engine import execute_sandboxed_code
+from obsidian_agent.agent.model import get_model_response, create_openai_client, create_vllm_client
+from obsidian_agent.agent.utils import load_system_prompt, create_memory_if_not_exists, extract_python_code, format_results, extract_reply, extract_thoughts
+from obsidian_agent.agent.settings import MEMORY_PATH, SAVE_CONVERSATION_PATH, MAX_TOOL_TURNS, VLLM_HOST, VLLM_PORT, OPENROUTER_STRONG_MODEL
+from obsidian_agent.agent.schemas import ChatMessage, Role, AgentResponse
 
 from typing import Union, Tuple
 
@@ -69,7 +69,7 @@ class Agent:
         Extract the thoughts, reply and python code from the response.
 
         Args:
-            response: The response from the agent.
+            response: The response from the obsidian_agent.agent.
 
         Returns:
             A tuple of the thoughts, reply and python code.
@@ -82,13 +82,13 @@ class Agent:
 
     def chat(self, message: str) -> AgentResponse:
         """
-        Chat with the agent.
+        Chat with the obsidian_agent.agent.
 
         Args:
-            message: The message to chat with the agent.
+            message: The message to chat with the obsidian_agent.agent.
 
         Returns:
-            The response from the agent.
+            The response from the obsidian_agent.agent.
         """
         # Add the user message to the conversation history
         self._add_message(ChatMessage(role=Role.USER, content=message))

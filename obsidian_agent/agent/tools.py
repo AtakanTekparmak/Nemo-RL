@@ -3,8 +3,8 @@ import tempfile
 import uuid
 from typing import Union
 
-from agent.settings import MEMORY_PATH
-from agent.utils import check_size_limits, create_memory_if_not_exists
+from obsidian_agent.agent.settings import MEMORY_PATH
+from obsidian_agent.agent.utils import check_size_limits, create_memory_if_not_exists
 
 def get_size(file_or_dir_path: str) -> int:
     """

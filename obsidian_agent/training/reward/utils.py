@@ -1,5 +1,5 @@
-from training.settings import JUDGE_PROMPT_PATH
-from data.schemas.kb import Fact
+from obsidian_agent.training.settings import JUDGE_PROMPT_PATH
+from obsidian_agent.training.reward.schemas import Fact
 
 def load_judge_prompt() -> str:
     """

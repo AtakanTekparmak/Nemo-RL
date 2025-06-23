@@ -1,9 +1,7 @@
-from training.reward.utils import construct_judge_prompt
-from training.reward.model import get_model_response
-from training.reward.schemas import JudgeResponse
-from training.settings import GPT_O3
-
-from data.schemas.kb import Fact
+from obsidian_agent.training.reward.utils import construct_judge_prompt
+from obsidian_agent.training.reward.model import get_model_response
+from obsidian_agent.training.reward.schemas import JudgeResponse, Fact
+from obsidian_agent.training.settings import GPT_O3
 
 def get_reward(
         folder_dump_str: str,

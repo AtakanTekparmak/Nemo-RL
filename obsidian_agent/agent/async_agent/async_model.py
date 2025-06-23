@@ -3,8 +3,8 @@ from pydantic import BaseModel
 
 from typing import Optional, Union
 
-from agent.settings import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_STRONG_MODEL, VLLM_HOST, VLLM_PORT
-from agent.schemas import ChatMessage, Role
+from obsidian_agent.agent.settings import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_STRONG_MODEL, VLLM_HOST, VLLM_PORT
+from obsidian_agent.agent.schemas import ChatMessage, Role
 
 def create_async_openai_client() -> AsyncOpenAI:
     """Create a new AsyncOpenAI client instance."""

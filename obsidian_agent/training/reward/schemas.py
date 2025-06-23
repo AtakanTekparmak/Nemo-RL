@@ -14,3 +14,5 @@ class JudgeResponse(BaseModel):
         else:
             self.ratio_of_facts_present = 0.0
 
+class Fact(BaseModel):
+    fact_description: str
