@@ -20,6 +20,7 @@ from nemo_rl.data.hf_datasets.openmathinstruct2 import OpenMathInstruct2Dataset
 from nemo_rl.data.hf_datasets.prompt_response_dataset import (
     PromptResponseDataset,
 )
+from nemo_rl.data.hf_datasets.memory_retrieval_dataset import MemoryRetrievalDataset
 from nemo_rl.data.hf_datasets.squad import SquadDataset
 
 __all__ = [
@@ -28,6 +29,7 @@ __all__ = [
     "OasstDataset",
     "OpenMathInstruct2Dataset",
     "PromptResponseDataset",
+    "MemoryRetrievalDataset",
     "SquadDataset",
     "COMMON_CHAT_TEMPLATES",
 ]
