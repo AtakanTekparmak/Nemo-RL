@@ -2,7 +2,7 @@ install-uv:
 	curl -LsSf https://astral.sh/uv/install.sh | sh;
 	uv venv;
 
-install-agent: install-uv
+install: install-uv
 	uv pip install openai pydantic python-dotenv;
 
 run-training: 
