@@ -55,7 +55,7 @@ def memory_retrieval_processor(
     message_log: LLMMessageLogType = []
 
     if task_data_spec.system_prompt:
-        sys_prompt: dict[str, str | torch.Tensor] = {
+        sys_prompt: dict[str, str | list[int]] = {
             "role": "system",
             "content": task_data_spec.system_prompt,
         }
@@ -65,7 +65,7 @@ def memory_retrieval_processor(
             add_generation_prompt=False,
             add_special_tokens=False,
         )
-        sys_prompt["token_ids"] = tokenizer(sys, return_tensors="pt")["input_ids"][0]
+        sys_prompt["token_ids"] = tokenizer(sys, return_tensors="pt")["input_ids"][0].tolist()
         message_log.append(sys_prompt)
 
     if task_data_spec.prompt:
@@ -77,7 +77,7 @@ def memory_retrieval_processor(
         add_generation_prompt=True,
         add_special_tokens=False,
     )
-    user_message["token_ids"] = tokenizer(message, return_tensors="pt")["input_ids"][0]
+    user_message["token_ids"] = tokenizer(message, return_tensors="pt")["input_ids"][0].tolist()
     user_message["content"] = message
     message_log.append(user_message)
 
