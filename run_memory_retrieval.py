@@ -84,9 +84,30 @@ def memory_retrieval_processor(
     length = sum(len(m["token_ids"]) for m in message_log)
     loss_multiplier = 1.0
     if length > max_seq_length:
+        # More reasonable truncation strategy that maintains consistency
+        # Instead of truncating to tiny amounts, we'll proportionally reduce each message
+        total_reduction_needed = length - max_seq_length
+        
+        # Calculate reduction per message proportional to its current length
         for m in message_log:
-            m["token_ids"] = m["token_ids"][: min(4, max_seq_length // len(message_log))]
-        loss_multiplier = 0.0
+            msg_length = len(m["token_ids"])
+            reduction_ratio = total_reduction_needed / length
+            tokens_to_remove = max(0, int(msg_length * reduction_ratio))
+            # Ensure we don't truncate to less than 10 tokens to maintain some content
+            new_length = max(10, msg_length - tokens_to_remove)
+            m["token_ids"] = m["token_ids"][:new_length]
+        
+        # Recalculate length after truncation
+        new_length = sum(len(m["token_ids"]) for m in message_log)
+        
+        # If still too long, apply uniform truncation to all messages
+        if new_length > max_seq_length:
+            # Calculate how many tokens each message should have
+            avg_tokens_per_msg = max_seq_length // len(message_log)
+            for m in message_log:
+                m["token_ids"] = m["token_ids"][:avg_tokens_per_msg]
+        
+        loss_multiplier = 0.1  # Reduce but don't completely zero out the loss
 
     output: DatumSpec = {
         "message_log": message_log,
