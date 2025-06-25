@@ -108,24 +108,12 @@ class MemoryRetrievalEnvironment(EnvironmentInterface):
                 terminated = True
                 if "_tmpdir" in meta:
                     meta["_tmpdir"].cleanup()
-                # Create terminated metadata structure instead of None
-                new_meta = {
-                    "answer": meta.get("answer", ""),
-                    "static_memory": meta.get("static_memory", ""),
-                    "num_turns": num_turns + 1,
-                    "memory_dir": "",  # Clear the memory_dir since it's cleaned up
-                }
+                new_meta = None
             elif num_turns + 1 >= self.max_turns:
                 terminated = True
                 if "_tmpdir" in meta:
                     meta["_tmpdir"].cleanup()
-                # Create terminated metadata structure instead of None
-                new_meta = {
-                    "answer": meta.get("answer", ""),
-                    "static_memory": meta.get("static_memory", ""),
-                    "num_turns": num_turns + 1,
-                    "memory_dir": "",  # Clear the memory_dir since it's cleaned up
-                }
+                new_meta = None
             else:
                 new_meta["num_turns"] = num_turns + 1
 
