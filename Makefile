@@ -3,7 +3,6 @@ install-uv:
 	uv venv;
 
 install-agent: install-uv
-	source .venv/bin/activate;
 	uv pip install openai pydantic python-dotenv;
 
 run-training: install-agent
