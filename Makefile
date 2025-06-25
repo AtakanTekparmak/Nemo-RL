@@ -5,5 +5,5 @@ install-uv:
 install-agent: install-uv
 	uv pip install openai pydantic python-dotenv;
 
-run-training: install-agent
+run-training: 
 	uv run run_memory_retrieval.py --config examples/configs/grpo_memory_retrieval.yaml;
