@@ -409,139 +409,50 @@ class VllmGenerationWorker:
     def generate(
         self, data: BatchedDataDict[GenerationDatumSpec], greedy: bool = False
     ) -> BatchedDataDict[GenerationOutputSpec]:
-        """Generate a batch of data using vLLM generation.
-
-        Args:
-            data: BatchedDataDict containing input_ids and input_lengths tensors
-            greedy: Whether to use greedy decoding instead of sampling
-
-        Returns:
-            BatchedDataDict conforming to GenerationOutputSpec:
-                - output_ids: input + generated token IDs with proper padding
-                - logprobs: Log probabilities for tokens
-                - generation_lengths: Lengths of each response
-                - unpadded_sequence_lengths: Lengths of each input + generated sequence
-        """
-        # Handle empty input case
-        if len(data["input_ids"]) == 0:
-            # Return empty BatchedDataDict with all required fields
-            return BatchedDataDict[GenerationOutputSpec](
-                {
-                    "output_ids": torch.zeros((0, 0), dtype=torch.long),
-                    "logprobs": torch.zeros((0, 0), dtype=torch.float),
-                    "generation_lengths": torch.zeros(0, dtype=torch.long),
-                    "unpadded_sequence_lengths": torch.zeros(0, dtype=torch.long),
-                }
-            )
-
-        input_ids = data["input_ids"]
-        input_lengths = data["input_lengths"]
-        batch_stop_strings: list[list[str]] = data.get("stop_strings", [])
-        stop_strings = self._merge_stop_strings(batch_stop_strings)
-        sampling_params = self._build_sampling_params(
-            greedy=greedy,
-            stop_strings=stop_strings,
+        """Generate a batch of data using vLLM."""
+        assert isinstance(data, BatchedDataDict), (
+            f"data must be a BatchedDataDict, got type: {type(data)}"
+        )
+        assert "input_ids" in data and "input_lengths" in data, (
+            "input_ids and input_lengths are required in data for vLLM generation"
         )
 
-        # verify inputs have correct padding
-        verify_right_padding(data, pad_value=self.cfg["pad_token_id"])
-
-        # Convert inputs to vLLM format
-        batch_size = input_ids.shape[0]
-        # Original input length with padding
-        padded_input_length = input_ids.size(1)
-
-        # Prepare prompts for vLLM (removing padding)
-        prompts = []
-
-        for i in range(batch_size):
-            # Use input_lengths to get only valid tokens (not padding)
-            valid_length = input_lengths[i].item()
-            valid_ids = (
-                input_ids[i, :valid_length] if valid_length > 0 else input_ids[i, :0]
-            )
-            token_ids = valid_ids.tolist()
-
-            prompts.append({"prompt_token_ids": token_ids})
-
-        # Generate outputs
-        assert self.llm is not None, (
-            "Attempting to generate with either an uninitialized vLLM or non-model-owner"
+        # Shard the data across the tied worker groups
+        dp_size = self.sharding_annotations.get_axis_size("data_parallel")
+        sharded_data: list[SlicedDataDict] = data.shard_by_batch_size(
+            dp_size, batch_size=None, allow_uneven_shards=True
         )
-        outputs = self.llm.generate(prompts, sampling_params)
-
-        # Process the outputs - but preserve the original input padding structure
-        output_ids_list = []
-        logprobs_list = []
-        generation_lengths = []
-        unpadded_sequence_lengths = []
-        max_length = 0
-        for output in outputs:
-            max_length = max(max_length, len(output.outputs[0].token_ids))
-
-        for i, output in enumerate(outputs):
-            # Extract generated tokens
-            sequence_length = input_lengths[i]
-            generation = output.outputs[0]
-            generated_tokens = list(generation.token_ids)
-
-            # Calculate total sequence length (original input length + generated tokens)
-            total_length = padded_input_length + max_length
-
-            # Create a new tensor with the right size and fill with padding token
-            full_output = torch.full(
-                (total_length,), self.cfg["pad_token_id"], dtype=input_ids.dtype
-            )
-
-            # Copy original input (with padding) into the beginning
-            full_output[:sequence_length] = input_ids[i][:sequence_length]
-
-            # Add generated tokens after the original input
-            full_output[sequence_length : sequence_length + len(generated_tokens)] = (
-                torch.tensor(generated_tokens)
-            )
-
-            output_ids_list.append(full_output)
-            full_logprobs = torch.zeros(total_length, dtype=torch.float32)
-            if hasattr(generation, "logprobs") and generation.logprobs:
-                try:
-                    for idx, logprob_dict in enumerate(generation.logprobs):
-                        if logprob_dict:
-                            position = sequence_length + idx
-                            full_logprobs[position] = next(iter(logprob_dict.items()))[
-                                1
-                            ].logprob
-                except Exception:
-                    import traceback
-
-                    traceback.print_exc()
-
-            logprobs_list.append(full_logprobs)
-
-            response_length = sequence_length + len(generated_tokens)
-            generation_lengths.append(len(generated_tokens))
-            unpadded_sequence_lengths.append(response_length)
-            assert response_length <= self.llm.llm_engine.model_config.max_model_len, (
-                f"response_length={response_length} > max_model_len={self.llm.llm_engine.model_config.max_model_len}, which should not happen. Please check this behavior in isolation by running `uv run --extra vllm tools/model_diagnostics/1.max_model_len_respected.py {self.llm.llm_engine.model_config.model}` and raise this issue with the vllm team."
-            )
-        # Create return data conforming to GenerationOutputSpec
-        output_ids = torch.stack(output_ids_list)
-        logprobs = torch.stack(logprobs_list)
-
-        return_data = BatchedDataDict[GenerationOutputSpec](
-            {
-                "output_ids": output_ids,
-                "logprobs": logprobs,
-                "generation_lengths": torch.tensor(
-                    generation_lengths, dtype=torch.long
-                ),
-                "unpadded_sequence_lengths": torch.tensor(
-                    unpadded_sequence_lengths, dtype=torch.long
-                ),
-            }
+        future_bundle = self.worker_group.run_all_workers_sharded_data(
+            "generate",
+            sharded_data,
+            in_sharded_axes=["data_parallel"],
+            replicate_on_axes=None,  # just run on tp rank 0
+            output_is_replicated=None,
+            common_kwargs={"greedy": greedy},
         )
 
-        return return_data
+        # Get results from the workers, respecting tied worker groups (only one result per tied worker group)
+        results = self.worker_group.get_all_worker_results(future_bundle)
+
+        # Combine results from all tied worker groups
+        combined: BatchedDataDict[GenerationOutputSpec] = BatchedDataDict.from_batches(
+            results, pad_value_dict={"output_ids": self.cfg["pad_token_id"]}
+        )
+
+        # Verify the output has all required fields
+        required_keys = [
+            "output_ids",
+            "generation_lengths",
+            "unpadded_sequence_lengths",
+            "logprobs",
+        ]
+        missing_keys = [key for key in required_keys if key not in combined]
+        if missing_keys:
+            raise ValueError(
+                f"Missing required keys for GenerationOutputSpec: {missing_keys}"
+            )
+
+        return combined
 
     async def generate_async(
         self, data: BatchedDataDict[GenerationDatumSpec], greedy: bool = False
@@ -1302,7 +1213,7 @@ class VllmGeneration(GenerationInterface):
         # Shard the data across the tied worker groups
         dp_size = self.sharding_annotations.get_axis_size("data_parallel")
         sharded_data: list[SlicedDataDict] = data.shard_by_batch_size(
-            dp_size, allow_uneven_shards=True
+            dp_size, batch_size=None, allow_uneven_shards=True
         )
         future_bundle = self.worker_group.run_all_workers_sharded_data(
             "generate",

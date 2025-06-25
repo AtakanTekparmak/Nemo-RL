@@ -1,5 +1,6 @@
 from typing import Any
 
+import os
 from datasets import load_dataset
 
 from nemo_rl.data.interfaces import TaskDataSpec
@@ -29,7 +30,15 @@ class MemoryRetrievalDataset:
             val_ds = None
 
         self.formatted_ds = {"train": train_ds, "validation": val_ds}
+        
+        # Get the directory where this file is located
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # Navigate up to the repo root (assuming nemo_rl/data/hf_datasets/ structure)
+        repo_root = os.path.join(current_dir, "..", "..", "..")
+        # Construct the absolute path to the system prompt
+        system_prompt_path = os.path.join(repo_root, "obsidian_agent", "agent", "system_prompt.txt")
+        
         self.task_spec = TaskDataSpec(
             task_name="memory_retrieval",
-            system_prompt_file="obsidian_agent/agent/system_prompt.txt",
+            system_prompt_file=system_prompt_path,
         )
